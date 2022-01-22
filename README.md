@@ -8,6 +8,7 @@ El proyecto hasta el momento presenta los siguientes archivos:
 Funciones importantes:
 - getChar(string,int,bool) : Lee el caracter de la entrada y puede o no mover el puntero
 - peek1Char(string,int) : Lee el siguiente caracter sin mover el puntero
+- peek2Char(string,int) : Lee el siguiente-siguiente caracter sin mover el puntero
 - getToken(map<string,string>::iterator,ofstream) : Crea el token y lo escribe en el archivo
 - getToken(string,string,ofstream) : Crea el token y lo escribe en el archivo 
 ```
