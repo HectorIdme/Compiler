@@ -4,7 +4,14 @@
 
 El proyecto hasta el momento presenta los siguientes archivos:
 - scanner.cpp : Scanner que revisara caracter por caracter para obtener los tokens, asi como errores y trabajar con saltos y comentarios.
-- tokens.h : Encabezado donde se presenta la estructura del Token así como estructuras que almacenan símbolos y palabras permitidos para el lenguaje
+```
+Funciones importantes:
+- getChar(string,int,bool) : Lee el caracter de la entrada y puede o no mover el puntero
+- peek1Char(string,int) : Lee el siguiente caracter sin mover el puntero
+- getToken(map<string,string>::iterator,ofstream) : Crea el token y lo escribe en el archivo
+- getToken(string,string,ofstream) : Crea el token y lo escribe en el archivo 
+```
+- tokens.h : Encabezado donde se presenta la estructura del Token **<token_type,token_value>**  así como estructuras que almacenan símbolos y palabras permitidos para el lenguaje
 - tests : Carpeta donde se encuentran los test para el scanner
 - scanner.exe : Ejecutable del scanner
 - tokens_ans.txt : Archivo donde se escribira el resultado del test, o sea la lista de los tokens con los errores identificados
