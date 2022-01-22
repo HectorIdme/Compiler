@@ -3,7 +3,10 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <limits>
+#include <sstream>
 #include <string>
+#include <iomanip>
 #include "tokens.h"
 
 using namespace std;
@@ -11,14 +14,18 @@ using namespace std;
 struct LexicalError{
     string word;
     int line;
+    bool problem;
 
-    LexicalError(string w,int l){
+    LexicalError(string w,int l,bool p=1){
         word = w;
         line = l;
+        problem = p;
     }
 
     string toString(){
-        string s = "Error en la linea "+to_string(line)+ " no se reconoce "+word+"\n";
+        string s;
+        if(problem) s = "Error en la linea "+to_string(line)+ " no se reconoce "+word+"\n";
+        else s = "Error en la linea "+to_string(line)+ " se produjo overflow\n";
         return s;
     }
 
@@ -37,6 +44,11 @@ char getChar(string line,int &pos,bool op=1){
 char peek1Char(string line,int pos){
     if(pos+1 == line.size()) return ' ';
     return line[pos+1];
+}
+
+char peek2Char(string line,int pos){
+    if(pos+2 == line.size()) return ' ';
+    return line[pos+2];
 }
 
 void getToken(map<string,string>::iterator it,ofstream &f){
@@ -71,6 +83,7 @@ int main(int argc, char** argv){
     bool error_id = false;
     bool error_num = false;
     bool error_string = false;
+    bool doubleType = false;
 
     vector<LexicalError> errors;
     ifstream fileRead(argv[1]);
@@ -186,25 +199,21 @@ int main(int argc, char** argv){
                     }
                     else if(type_token == "NUM"){
                         if( num.find(letter) == num.end())
-                            error_num = true;
-
-                        else if(letter == '+' || letter == '-'){
-                            if( digits.find(peek1Char(line,pos)) == digits.end())
-                                error_num = true;
-                        }
+                            error_num = true;                        
                     }
-
-
 
                     //Verificar que se obtuve valor completo del token 
                     char tmp_letter = peek1Char(line,pos);
 
                     if(type_token == "ID"){
                         //Se completo si el siguiente caracter es ' ' o algun simbolo o palabra especial del lenguaje Pascal
-                        if(tmp_letter == ' ' || words.find(string(1,tmp_letter)) != words.end()){
+                        if(tmp_letter == ' ' || words.find(string(1,tmp_letter)) != words.end() || tmp_letter == '\''){
                             if(error_id){
                                 errors.push_back(LexicalError(word,num_line));
                                 error_id = false;
+                            }
+                            else{
+                                getToken(type_token,word,fileWrite);
                             }
                             word.clear();
                         }
@@ -214,22 +223,107 @@ int main(int argc, char** argv){
                         
                         if(letter == 'e' || letter == 'E') e_num = true;
 
-                        else if(letter == '+' || letter == '-'){
-                            if(e_num) cont_sim++;
-                        }
-
                         //Se completo si el siguiente caracter es ' ' o algun simbolo o palabra especial del lenguaje Pascal
-                        else if(tmp_letter == ' ' || words.find(string(1,tmp_letter)) != words.end()){
+                        if(tmp_letter == ' ' || words.find(string(1,tmp_letter)) != words.end() || tmp_letter == '\''){
+                                
                                 if(tmp_letter != '.'){
-                                    if(error_num){
-                                        errors.push_back(LexicalError(word,num_line));
-                                        error_num = false;
+                                    if(e_num){
+                                        if(tmp_letter == '+' || tmp_letter == '-') 
+                                            e_num = false;
                                     }
+                                    else{
+                                        try{
+                                            if(doubleType){
+                                                double x = stod(word);
+                                                doubleType = false;
+
+                                                double y;
+                                                stringstream ss1;
+                                                ss1 << word;
+                                                ss1 >> y;
+
+                                                ostringstream ss2;
+                                                ss2 << setprecision(10)<<y;
+                                                word = ss2.str(); 
+                                                
+                                            }else{
+                                                unsigned long int x = stoul(word);
+                                                stringstream ss2;
+                                                ss2<<x;
+                                                word = ss2.str();
+                                            }
+
+                                            if(error_num){
+                                                errors.push_back(LexicalError(word,num_line));
+                                                error_num = false;
+                                            }
+                                            else{
+                                                getToken(type_token,word,fileWrite);
+                                            }
+
+                                        }catch(out_of_range& e){
+                                            errors.push_back(LexicalError(word,num_line,0));
+                                            error_num = false;
+                                        }
+                                        word.clear();
+                                        e_num = false;
+                                    }
+                                    if(tmp_letter == ' ' && e_num ){
+                                        try{
+                                            if(doubleType){
+                                                double x = stod(word);
+                                                doubleType = false;
+
+                                                double y;
+                                                stringstream ss1;
+                                                ss1 << word;
+                                                ss1 >> y;
+
+                                                ostringstream ss2;
+                                                ss2 << setprecision(10)<<y;
+                                                word = ss2.str(); 
+                                                
+                                            }else{
+                                                unsigned long int x = stoul(word);
+                                                stringstream ss2;
+                                                ss2<<x;
+                                                word = ss2.str();
+                                            }
+
+                                            if(error_num){
+                                                errors.push_back(LexicalError(word,num_line));
+                                                error_num = false;
+                                            }
+                                            else{
+                                                getToken(type_token,word,fileWrite);
+                                            }
+
+                                        }catch(out_of_range& e){
+                                            errors.push_back(LexicalError(word,num_line,0));
+                                            error_num = false;
+                                        }
+                                        word.clear();
+                                        e_num = false;
+                                    }
+
+                                }
+                                if(error_num){
+                                    errors.push_back(LexicalError(word,num_line));
+                                    error_num = false;
                                     word.clear();
-                                    cont_sim = 0;
-                                    e_num = false;
                                 }
                         }
+                        if(tmp_letter == '.' || tmp_letter == 'e' || tmp_letter == 'E'){
+                            char tmp_letter2 = peek2Char(line,pos);
+                            if(tmp_letter2 != '.')
+                                doubleType = true;
+                            else{
+                                getToken(type_token,word,fileWrite);
+                                word.clear();
+                            }
+                        }
+
+
                     }
                     else if(type_token == "STRING"){
 
@@ -239,16 +333,10 @@ int main(int argc, char** argv){
                                 num_exp_string++;
                                 exp_string = true;
 
-                                if(num_exp_string==2 && tmp_letter != '\''){
+                                if(num_exp_string==2){
                                     exp_string = false;
                                     num_exp_string = 0;
-                                }
-                                if(num_exp_string>2){
-                                    error_string = true;
-                                    if(tmp_letter != '\''){
-                                        exp_string = false;
-                                        num_exp_string = 0;
-                                    }
+                                    word.pop_back();
                                 }
                             }
                             else{
@@ -256,6 +344,9 @@ int main(int argc, char** argv){
                                 if(error_string){
                                     errors.push_back(LexicalError(word,num_line));
                                     error_string = false;
+                                }
+                                else{
+                                    getToken(type_token,word,fileWrite);
                                 }
                                 word.clear();
                             }
@@ -268,6 +359,13 @@ int main(int argc, char** argv){
             pos++;
         }
         num_line++;
+    }
+
+    if(vstring){
+        vstring = false;
+        error_string = false;
+        errors.push_back(LexicalError(word,--num_line));
+        word.clear();
     }
 
     for(int i=0;i<errors.size();i++){

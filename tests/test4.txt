@@ -12,5 +12,3 @@ begin
       until n=0;
    end
 end.
-
-
