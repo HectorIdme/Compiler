@@ -2,11 +2,31 @@
 #include <fstream>
 #include <map>
 #include <set>
+#include <vector>
 #include <string>
 #include "tokens.h"
 
 using namespace std;
 
+struct LexicalError{
+    string word;
+    int line;
+
+    LexicalError(string w,int l){
+        word = w;
+        line = l;
+    }
+
+    string toString(){
+        string s = "Error en la linea "+to_string(line)+ " no se reconoce "+word+"\n";
+        return s;
+    }
+
+    void getError(ofstream &f){
+        f<<toString();
+    }
+
+};
 
 
 char getChar(string line,int &pos,bool op=1){
@@ -33,11 +53,12 @@ void getToken(string type, string value,ofstream &f){
 
 
 
-int main(){
+int main(int argc, char** argv){
 
     string line;
     string word = "";
     string type_token = "";
+    int num_line = 1;
     char letter;
     int pos;
     bool comment = false;
@@ -51,8 +72,8 @@ int main(){
     bool error_num = false;
     bool error_string = false;
 
-
-    ifstream fileRead("tests/test4.txt");
+    vector<LexicalError> errors;
+    ifstream fileRead(argv[1]);
     ofstream fileWrite;
     fileWrite.open("tokens_ans.txt",ios::out);
     
@@ -115,9 +136,7 @@ int main(){
                 else if(word == "<"){
                     if(peek1Char(line,pos) == '>') 
                         word += getChar(line,pos,0);
-                }
-                else if(word == "<"){
-                    if(peek1Char(line,pos) == '=') 
+                    else if(peek1Char(line,pos) == '=')
                         word += getChar(line,pos,0);
                 }
                 else if(word == ">"){
@@ -181,12 +200,12 @@ int main(){
                     char tmp_letter = peek1Char(line,pos);
 
                     if(type_token == "ID"){
+                        //Se completo si el siguiente caracter es ' ' o algun simbolo o palabra especial del lenguaje Pascal
                         if(tmp_letter == ' ' || words.find(string(1,tmp_letter)) != words.end()){
                             if(error_id){
-                                type_token = "ERROR";
+                                errors.push_back(LexicalError(word,num_line));
                                 error_id = false;
                             }
-                            getToken(type_token,word,fileWrite);
                             word.clear();
                         }
                     
@@ -199,15 +218,14 @@ int main(){
                             if(e_num) cont_sim++;
                         }
 
+                        //Se completo si el siguiente caracter es ' ' o algun simbolo o palabra especial del lenguaje Pascal
                         else if(tmp_letter == ' ' || words.find(string(1,tmp_letter)) != words.end()){
                                 if(tmp_letter != '.'){
                                     if(error_num){
-                                        type_token = "ERROR";
+                                        errors.push_back(LexicalError(word,num_line));
                                         error_num = false;
                                     }
-                                    getToken(type_token,word,fileWrite);
                                     word.clear();
-
                                     cont_sim = 0;
                                     e_num = false;
                                 }
@@ -216,6 +234,7 @@ int main(){
                     else if(type_token == "STRING"){
 
                         if(letter == '\''){
+                            //Verificar la cantidad de ' en el string para ver si esta bien o es erroneo
                             if(tmp_letter == '\'' || exp_string){
                                 num_exp_string++;
                                 exp_string = true;
@@ -235,10 +254,9 @@ int main(){
                             else{
                                 vstring = false;
                                 if(error_string){
-                                    type_token = "ERROR";
+                                    errors.push_back(LexicalError(word,num_line));
                                     error_string = false;
                                 }
-                                getToken(type_token,word,fileWrite);
                                 word.clear();
                             }
                         } 
@@ -249,9 +267,12 @@ int main(){
             }
             pos++;
         }
+        num_line++;
+    }
 
-
-    } 
+    for(int i=0;i<errors.size();i++){
+        errors[i].getError(fileWrite);
+    }
     
     fileRead.close();
     fileWrite.close();
