@@ -18,7 +18,7 @@ struct Token{
 
     string toString(){
         string s;
-        s = "<"+type+","+val+">\n";
+        s = "<"+type+"|"+val+">\n";
         return s;
     }
 };
@@ -98,7 +98,9 @@ map<string,string> words{
     {"with","WITH"},
     {"write","WRITE"},
     {"writeln","WRITELN"},
-    {"until","UNTIL"}
+    {"until","UNTIL"},
+    {"continue","CONTINUE"},
+    {"break","BREAK"}
 };
  
 map<string,string> keyWords{
@@ -134,6 +136,8 @@ map<string,string> keyWords{
     {"write","WRITE"},
     {"writeln","WRITELN"},
     {"until","UNTIL"},
+    {"continue","CONTINUE"},
+    {"break","BREAK"},
 
     {"and","OP_AND"},
     {"or","OP_OR"},

@@ -19,7 +19,7 @@ try:
 
                 else: 
                     e = e[1:-1]
-                    key_val = e.split(",")
+                    key_val = e.split("|")
                     TOKENS.append(key_val)
 
 except FileNotFoundError:
@@ -125,7 +125,7 @@ def MainCode(parent_=None):
                     Fail("MainCode: ")
             else:
                 Fail("MainCode: ")
-
+        print("word: ",word)
         return False 
 
     else:
@@ -283,6 +283,7 @@ def VarDeciPrime(parent_=None):
 
     rVarDeciPrime = Node("VarDeci'",parent=parent_)
     word = CurrentToken()
+    print("word-",word)
 
     if word[1] == ",":
         Node(",",parent=rVarDeciPrime)
@@ -359,6 +360,8 @@ def Statement(parent_=None):
     #Statement -> break
     #Statement -> continue
     elif word[1] in ["break","continue"]:
+        Node(word[1],parent=rStatement)
+        NextToken()
         return True
     
     Fail("Statement: ")
@@ -412,6 +415,7 @@ def ForStatement(parent_=None):
 
                                         if word[1] == ";":
                                             Node(";",parent=rForSt)
+                                            NextToken()
                                             return True
                                         else:
                                             Fail("ForStatement: ")
@@ -565,6 +569,7 @@ def Assign(parent_=None):
 
                 if word[1] == ";":
                     Node(";",parent=rAssign)
+                    NextToken()
                     return True
                 else:
                     Fail("Assign: ")
@@ -736,12 +741,14 @@ def Factor(parent_=None):
 
     if word[0] == "ID":
         Node(word[1],parent=rFactor)
+        NextToken()
         return True
     
     #Factor -> Value
 
     elif word[0] in ["NUM","STRING"]:
         Node(word[1],parent=rFactor)
+        NextToken()
         return True
     
     #Factor -> (Expr)
@@ -755,6 +762,7 @@ def Factor(parent_=None):
 
             if word[1] == ")":
                 Node(word[1],parent=rFactor)
+                NextToken()
                 return True
 
             else:

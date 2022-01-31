@@ -1,9 +1,8 @@
-program forLoop;
-var
-    a:integer;
-
+program prueba;
+    const PI = 3.1416;
+    var
+        a:integer;
+        b,c: real;
 begin
-
-        writeln('value of a: ')
-
+        continue
 end.
