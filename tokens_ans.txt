@@ -1,0 +1,15 @@
+<PROGRAM,program>
+<ID,forLoop>
+<DEL_SEMICOLON,;>
+<VAR,var>
+<ID,a>
+<DEL_TWOPOINT,:>
+<ID,integer>
+<DEL_SEMICOLON,;>
+<BEGIN,begin>
+<WRITELN,writeln>
+<DEL_LT_PARNT,(>
+<STRING,'value of a: '>
+<DEL_RT_PARNT,)>
+<END,end>
+<OP_POINT,.>

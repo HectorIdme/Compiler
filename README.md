@@ -19,6 +19,7 @@ Funciones importantes:
 
 ## Instalación y Ejecución
 ```
+instalar Graphviz en su ordenador
 git clone https://github.com/HectorIdme/Compiler.git
 cd Compiler
 g++ scanner.cpp -o scanner.exe

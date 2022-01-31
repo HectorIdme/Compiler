@@ -1,0 +1,9 @@
+program forLoop;
+var
+    a:integer;
+
+begin
+
+        writeln('value of a: ')
+
+end.

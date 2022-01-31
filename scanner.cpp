@@ -166,6 +166,16 @@ int main(int argc, char** argv){
                         word += getChar(line,pos,0);
                 }
 
+                //verificando si IDs compuesto de palabras reservadas
+                auto kword = keyWords.find(word);
+                if(kword != keyWords.end()){
+                    char nextLetter = peek1Char(line,pos);
+                    string nxtLetter = "";
+                    nxtLetter += nextLetter;
+                    if(nextLetter != ' ' && operators.find(nxtLetter) == operators.end()) 
+                        word += getChar(line,pos,0);
+                }
+
                 auto it = words.find(word);
 
                 //verificando si token en palabras definidas
@@ -366,6 +376,10 @@ int main(int argc, char** argv){
         error_string = false;
         errors.push_back(LexicalError(word,--num_line));
         word.clear();
+    }
+
+    if(errors.size()){
+        fileWrite<<"$\n";
     }
 
     for(int i=0;i<errors.size();i++){
