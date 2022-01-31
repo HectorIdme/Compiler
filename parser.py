@@ -40,14 +40,7 @@ def CurrentToken():
         return 
 
 def Fail(msg=None):
-
-    if msg==None:
-        msg="Syntax Error -"
-
-    print(msg + str(CurrentToken()))
-    ERRORS.append(msg + str(CurrentToken()))
-
-
+    ERRORS.append("Syntax Error - "+ msg + str(CurrentToken()))
 
 
 def Program():
@@ -854,8 +847,12 @@ def Write(parent_=None):
     return False
 
 
+if __name__ == '__main__':
+    Program()
 
-Program()
+    if len(ERRORS) != 0:
+        for e in ERRORS:
+            print(e)
 
 
 
