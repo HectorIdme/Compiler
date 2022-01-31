@@ -1,6 +1,7 @@
 # Compiler
 > Se presenta la implementación de un compilador compuesto por el frontend y backend para el lenguaje de programación Pascal.
-> Para esta primera parte se presenta la implementación del analizador léxico.
+> Primera parte se presenta la implementación del analizador léxico.
+> Segunda parter se presenta la implementación del parser.
 
 El proyecto hasta el momento presenta los siguientes archivos:
 - scanner.cpp : Scanner que revisara caracter por caracter para obtener los tokens, asi como errores y trabajar con saltos y comentarios.
@@ -16,13 +17,17 @@ Funciones importantes:
 - tests : Carpeta donde se encuentran los test para el scanner
 - scanner.exe : Ejecutable del scanner
 - tokens_ans.txt : Archivo donde se escribira el resultado del test, o sea la lista de los tokens con los errores identificados
+- requirements.txt : Para instalar las dependencias de python
+- parser.py : Parser que hara uso de los tokens y la gramática asignada
 
 ## Instalación y Ejecución
 ```
 instalar Graphviz en su ordenador
 git clone https://github.com/HectorIdme/Compiler.git
 cd Compiler
+pip install -r requirements.txt
 g++ scanner.cpp -o scanner.exe
 ./scanner.exe <file with test (tests/test.txt)>
+python parser.py
 ```
 
