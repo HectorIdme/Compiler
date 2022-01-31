@@ -70,7 +70,6 @@ def Program():
                         if MainCode(rProg):
                             
                             print()
-                            print()
                             for pre,fill, node in RenderTree(rProg):
                                 print("%s%s" % (pre, node.name))
 
