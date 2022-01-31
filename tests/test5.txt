@@ -1,8 +1,36 @@
 program prueba;
-    const PI = 3.1416;
+    const 
+        PI = 3.1416;
+        euler = 2.1614;
     var
         a:integer;
         b,c: real;
+        texto: string;
 begin
-        continue
+        a := 17;
+        texto := 'XD';
+
+        for i := 0 to i<10 do
+            begin
+                writeln('Funciona ''BUCLE FOR''')
+
+                if(i=5) then
+                    begin
+                        continue
+                    end;
+
+            end;
+
+        if (a=1) then
+            begin
+                writeln('Funciona la condicional IF')
+                a := 0;
+            end;
+        else
+            begin
+                writeln('Funciona ELSE')
+            end;
+        
+        write(14<>15)
+
 end.

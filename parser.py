@@ -125,7 +125,7 @@ def MainCode(parent_=None):
                     Fail("MainCode: ")
             else:
                 Fail("MainCode: ")
-        print("word: ",word)
+
         return False 
 
     else:
@@ -283,7 +283,6 @@ def VarDeciPrime(parent_=None):
 
     rVarDeciPrime = Node("VarDeci'",parent=parent_)
     word = CurrentToken()
-    print("word-",word)
 
     if word[1] == ",":
         Node(",",parent=rVarDeciPrime)
@@ -401,29 +400,37 @@ def ForStatement(parent_=None):
                         if Expr(rForSt):
                             word = CurrentToken()
 
-                            if word[1] == "begin":
+                            if word[1] == "do":
                                 Node(word[1],parent=rForSt)
                                 NextToken()
+                                word = CurrentToken()
 
-                                if StatementList(rForSt):
-                                    word = CurrentToken()
+                                if word[1] == "begin":
+                                    Node(word[1],parent=rForSt)
+                                    NextToken()
 
-                                    if word[1] == "end":
-                                        Node("end",parent=rForSt)
-                                        NextToken()
+                                    if StatementList(rForSt):
                                         word = CurrentToken()
 
-                                        if word[1] == ";":
-                                            Node(";",parent=rForSt)
+                                        if word[1] == "end":
+                                            Node("end",parent=rForSt)
                                             NextToken()
-                                            return True
+                                            word = CurrentToken()
+
+                                            if word[1] == ";":
+                                                Node(";",parent=rForSt)
+                                                NextToken()
+                                                return True
+                                            else:
+                                                Fail("ForStatement: ")
                                         else:
                                             Fail("ForStatement: ")
-                                    else:
-                                        Fail("ForStatement: ")
-                                return False
+                                    return False
+                                else:
+                                    Fail("ForStatement: ")
                             else:
                                 Fail("ForStatement: ")
+
                         return False
                     else:
                         Fail("ForStatement: ")
