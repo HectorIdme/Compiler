@@ -1,0 +1,90 @@
+Program - program id; ConstBlock VarBlock MainCode
+
+MainCode -  begin StatementList end.
+
+ConstBlock - const ConstList
+ConstBlock - e
+
+ConstList - id = Value; ConstList
+ConstList - e
+
+Value - v_int
+Value - v_real
+Value - v_string
+
+VarBlock - var VarList
+VarBlock - e
+
+VarList - VarDeci : Type ; VarList
+VarList - e
+
+VarDeci - id VarDeci’
+VarDeci’ - ,VarDeci
+VarDeci’ - e
+
+Type - real
+Type - integer
+Type - string
+
+StatementList - Statement StatementList’
+StatementList’ - StatementList
+StatementList’ - e
+
+Statement - ForStatement
+Statement - IfStatement
+Statement - Assign
+Statement - WriteLn
+Statement - Write
+Statement - break
+Statement - continue
+
+ForStatement - for id := Value To Expr do begin StatementList end;
+
+IfStatement - if (Expr) then begin StatementList end; IfStatement'
+IfStatement' - else begin StatementList end;
+ifStatement' - e
+
+
+Assign - id := Expr;
+
+Expr - not Expr Expr’
+Expr - Expr2 Expr’
+Expr’ - BoleanOp Expr2 Expr’
+Expr’ - e
+
+Expr2 - Expr3 Expr2’
+Expr2’ - RelOp Expr3 Expr2’
+Expr2’ - e
+
+Expr3 - Term Expr3’
+Expr3’ - + Term Expr3’
+Expr3’ - - Term Expr3’
+Expr3’ - e
+
+Term - Factor Term’
+Term’ - * Factor Term’
+Term’ - / Factor Term’
+Term’ - div Factor Term’
+Term’ - mod Factor Term’
+Term’ - e
+
+Factor - id
+Factor - Value
+Factor - (Expr)
+
+RelOp - =
+RelOp - <>
+RelOp - <
+RelOp - <=
+RelOp - >=
+RelOp - >
+
+BooleanOp - and
+BooleanOp - or
+
+WriteLn - writeln (v_string)
+
+Write - write (Expr)
+
+To - to
+To - downto
