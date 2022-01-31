@@ -19,15 +19,26 @@ Funciones importantes:
 - tokens_ans.txt : Archivo donde se escribira el resultado del test, o sea la lista de los tokens con los errores identificados
 - requirements.txt : Para instalar las dependencias de python
 - parser.py : Parser que hara uso de los tokens y la gramática asignada
+- compilador.sh : Script que compila y ejecuta tanto el scanner con el parser, requiere modificación si se desea usar un test diferente
+- gramatica.txt : Gramatica Libre de Contexto usada para la creación del parser
+- parseTree.png : Arbol generado por el parser
 
-## Instalación y Ejecución
+
+## Instalación y Ejecución (en bash)
 ```
 instalar Graphviz en su ordenador
 git clone https://github.com/HectorIdme/Compiler.git
 cd Compiler
 pip install -r requirements.txt
+```
+###Metodo de Ejecución 01
+```
 g++ scanner.cpp -o scanner.exe
-./scanner.exe <file with test (tests/test.txt)>
+./scanner.exe <file with test (tests/test5.txt)>
 python parser.py
+```
+###Metodo de Ejecución 02
+```
+./compilador.sh <file with test (tests/test5.txt)>
 ```
 
