@@ -1,14 +1,17 @@
 from anytree import Node, RenderTree
 from anytree.exporter import DotExporter
+from uuid import  uuid4
 
 TOKENS = []
 ERRORS = []
+rProg = ""
 
 try:
     with open("tokens_ans.txt") as file:
             texto = file.read()
             texto = texto.split("\n")
             errors = False 
+
             for e in texto:
                 if e == "$":
                     errors = True
@@ -17,9 +20,14 @@ try:
                 elif errors:
                     ERRORS.append(e)
 
+                elif e in [""," "]:
+                    continue
+
                 else: 
-                    e = e[1:-1]
                     key_val = e.split("|")
+                    key_val[0] = key_val[0][1:]
+                    key_val[1] = key_val[1][:-1]
+
                     TOKENS.append(key_val)
 
 except FileNotFoundError:
@@ -39,28 +47,39 @@ def CurrentToken():
     except IndexError:
         return 
 
-def Fail(msg=None):
-    ERRORS.append("Syntax Error - "+ msg + str(CurrentToken()))
+def Fail(msg,line=0):
+    ERRORS.append("Error de sintaxis en la linea "+ str(line) + " inesperado "+ str(msg))
+
+
+def generateTree(root):
+    print()
+    print("Arbol Generado")
+    for pre,fill, node in RenderTree(root):
+        print("%s%s" % (pre, node.display_name))
+
+    DotExporter(root,nodeattrfunc=lambda node: 'label="{}"'.format(node.display_name)).to_picture("parseTree.png")
+    DotExporter(root,nodeattrfunc=lambda node: 'label="{}"'.format(node.display_name)).to_dotfile("parseTreeFile.dot")
 
 
 def Program():
     #Program -> program id; ConstBlock VarBlock MainCode
+    global rProg
 
-    rProg = Node("Program")
+    rProg = Node(str(uuid4()),display_name="Program")
     word = CurrentToken()
 
-    if word[0] == "PROGRAM":
-        Node("program",parent = rProg)
+    if word[1] == "program":
+        Node(str(uuid4()),parent = rProg,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[0] == "ID":
-            Node(word[1],parent = rProg)
+            Node(str(uuid4()),parent = rProg, display_name=word[1])
             NextToken()
             word = CurrentToken()
 
             if word[1] == ";":
-                Node(";",parent = rProg)
+                Node(str(uuid4()),parent = rProg,display_name=word[1])
                 NextToken()
 
                 if ConstBlock(rProg):
@@ -68,13 +87,7 @@ def Program():
                     if VarBlock(rProg):
 
                         if MainCode(rProg):
-                            
-                            print()
-                            for pre,fill, node in RenderTree(rProg):
-                                print("%s%s" % (pre, node.name))
 
-                            DotExporter(rProg).to_picture("parseTree.png")
-                            print("Arbol Generado")
                             return True
 
                         return False
@@ -84,11 +97,12 @@ def Program():
                 return False 
 
             else:
-                Fail("Program: ")
+                Fail(word[1],word[2]) 
         else:
-            Fail("Program: ")
+        
+            Fail(word[0],word[2]) 
     else:
-        Fail("Program: ")            
+        Fail(word[1],word[2])            
     
     return False
     
@@ -96,32 +110,32 @@ def Program():
 def MainCode(parent_=None):
     #MainCode -> begin StatementList end.
 
-    rMainCode = Node("MainCode",parent=parent_)
+    rMainCode = Node(str(uuid4()),parent=parent_,display_name="MainCode")
     word = CurrentToken()
     if word[1] == "begin":
-        Node("begin",parent=rMainCode)
+        Node(str(uuid4()),parent=rMainCode,display_name=word[1])
         NextToken()
         
         if StatementList(rMainCode):
             word = CurrentToken()
             
             if word[1] == "end":
-                Node("end",parent=rMainCode)
+                Node(str(uuid4()),parent=rMainCode,display_name=word[1])
                 NextToken()
                 word = CurrentToken()
 
                 if word[1] == ".":
-                    Node(".",parent=rMainCode)
+                    Node(str(uuid4()),parent=rMainCode,display_name=word[1])
                     return True
                 else:
-                    Fail("MainCode: ")
+                    Fail(word[1],word[2])
             else:
-                Fail("MainCode: ")
+                Fail(word[1],word[2])
 
         return False 
 
     else:
-        Fail("MainCode: ")
+        Fail(word[1],word[2])
     
     return False 
         
@@ -129,11 +143,11 @@ def MainCode(parent_=None):
 def ConstBlock(parent_=None):
     #ConstBlock -> const ConstList
 
-    rConstBlock = Node("ConstBlock",parent=parent_)
+    rConstBlock = Node(str(uuid4()),parent=parent_,display_name="ConstBlock")
     word  = CurrentToken()
 
     if word[1] == "const":
-        Node("const",parent = rConstBlock)
+        Node(str(uuid4()),parent = rConstBlock,display_name=word[1])
         NextToken()
         return ConstList(rConstBlock)
     
@@ -143,41 +157,41 @@ def ConstBlock(parent_=None):
         rConstBlock.parent = None
         return True
 
-    Fail("ConstBlock: ")
+    Fail(word[1],word[2])
     return False
 
 
 def ConstList(parent_=None):
     #ConstList -> id = Value; ConstList
 
-    rConstList = Node("ConstList",parent=parent_)
+    rConstList = Node(str(uuid4()),parent=parent_,display_name="ConstList")
     word = CurrentToken()
 
     if word[0] == "ID":
-        Node(word[1], parent=rConstList)
+        Node(str(uuid4()), parent=rConstList,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[1] == "=":
-            Node("=",parent=rConstList)
+            Node(str(uuid4()),parent=rConstList,display_name=word[1])
             NextToken()
             word = CurrentToken()
 
             if word[0] in ["STRING","NUM"]:
-                Node(word[1],parent=rConstList)
+                Node(str(uuid4()),parent=rConstList,display_name=word[1])
                 NextToken()
                 word = CurrentToken()
 
                 if word[1] == ";":
-                    Node(";",parent=rConstList)
+                    Node(str(uuid4()),parent=rConstList,display_name=word[1])
                     NextToken()
                     return ConstList(rConstList) 
                 else:
-                    Fail("ConstList: ")
+                    Fail(word[1],word[2])
             else:
-                Fail("ConstList: ") 
+                Fail(word[0],word[2]) 
         else:
-            Fail("ConstList: ")
+            Fail(word[1],word[2])
 
         return False 
     
@@ -187,18 +201,18 @@ def ConstList(parent_=None):
         rConstList.parent = None
         return True 
 
-    Fail("ConstList: ")
+    Fail(word[0],word[2])
     return False 
 
       
 def VarBlock(parent_=None):
     #VarBlock -> var VarList
 
-    rVarBlock = Node("VarBlock",parent=parent_)
+    rVarBlock = Node(str(uuid4()),parent=parent_,display_name="VarBlock")
     word = CurrentToken()
 
     if word[1] == "var":
-        Node("var",parent=rVarBlock)
+        Node(str(uuid4()),parent=rVarBlock,display_name=word[1])
         NextToken()
         return VarList(rVarBlock)
     
@@ -208,13 +222,13 @@ def VarBlock(parent_=None):
         rVarBlock.parent = None
         return True
     
-    Fail("VarBlock: ")
+    Fail(word[1],word[2])
     return False 
 
 
 def VarList(parent_=None):
 
-    rVarList = Node("VarList",parent=parent_)
+    rVarList = Node(str(uuid4()),parent=parent_,display_name="VarList")
     word = CurrentToken()
 
     #VarList -> e
@@ -229,55 +243,55 @@ def VarList(parent_=None):
         word = CurrentToken()
 
         if word[1] == ":":
-            Node(":",parent=rVarList)
+            Node(str(uuid4()),parent=rVarList,display_name=word[1])
             NextToken()
             word = CurrentToken()
 
             if word[1] in ["real","integer","string"]:
-                Node(word[1],parent=rVarList)
+                Node(str(uuid4()),parent=rVarList,display_name=word[1])
                 NextToken()
                 word = CurrentToken()
 
                 if word[1] == ";":
-                    Node(";",parent=rVarList)
+                    Node(str(uuid4()),parent=rVarList,display_name=word[1])
                     NextToken()
                     return VarList(rVarList)                   
                 else:
-                    Fail("VarList: ")
+                    Fail(word[1],word[2])
             else:
-                Fail("VarList: ")
+                Fail(word[1],word[2])
         else:
-            Fail("VarList: ")
+            Fail(word[1],word[2])
 
         return False
 
-
+    Fail(word[1],word[2])
     return False
 
 
 def VarDeci(parent_=None):
     #VarDeci -> id VarDeci'
 
-    rVarDeci = Node("VarDeci",parent=parent_)
+    rVarDeci = Node(str(uuid4()),parent=parent_,display_name="VarDeci")
     word = CurrentToken()
 
     if word[0] == "ID":
-        Node(word[1],parent=rVarDeci)
+        Node(str(uuid4()),parent=rVarDeci,display_name=word[1])
         NextToken()
         return VarDeciPrime(rVarDeci)
     
-    Fail("VarDeci: ")
+    Fail(word[0],word[2])
     return False
 
 
 def VarDeciPrime(parent_=None):
     #VarDeciPrime -> , VarDeci
 
-    rVarDeciPrime = Node("VarDeci'",parent=parent_)
+    rVarDeciPrime = Node(str(uuid4()),parent=parent_,display_name="VarDeci'")
     word = CurrentToken()
 
     if word[1] == ",":
-        Node(",",parent=rVarDeciPrime)
+        Node(str(uuid4()),parent=rVarDeciPrime,display_name=word[1])
         NextToken()
         return VarDeci(rVarDeciPrime)
     
@@ -287,14 +301,14 @@ def VarDeciPrime(parent_=None):
         rVarDeciPrime.parent = None
         return True
     
-    Fail("VarDeci': ")
+    Fail(word[1],word[2])
     return False
 
 
 def StatementList(parent_=None):
     #StatementList -> Statement StatementList'
 
-    rStList = Node("StatementList",parent=parent_)
+    rStList = Node(str(uuid4()),parent=parent_,display_name="StatementList")
 
     if Statement(rStList):
         return StatementListPrime(rStList)
@@ -302,7 +316,7 @@ def StatementList(parent_=None):
 
 
 def StatementListPrime(parent_=None):
-    rStListPrime = Node("StatementList'",parent=parent_)
+    rStListPrime = Node(str(uuid4()),parent=parent_,display_name="StatementList'")
     word = CurrentToken() 
 
     #StatementList' -> e
@@ -320,7 +334,7 @@ def StatementListPrime(parent_=None):
 
 
 def Statement(parent_=None):
-    rStatement = Node("Statement",parent=parent_)
+    rStatement = Node(str(uuid4()),parent=parent_,display_name="Statement")
     word = CurrentToken()
 
     #Statement -> ForStatement
@@ -351,89 +365,89 @@ def Statement(parent_=None):
     #Statement -> break
     #Statement -> continue
     elif word[1] in ["break","continue"]:
-        Node(word[1],parent=rStatement)
+        Node(str(uuid4()),parent=rStatement,display_name=word[1])
         NextToken()
         return True
     
-    Fail("Statement: ")
+    Fail(word[1],word[2])
     return False
 
 
 def ForStatement(parent_=None):
     #ForStatement -> for id := Value To Expr do begin StatementList end;
 
-    rForSt = Node("ForStatement",parent=parent_)
+    rForSt = Node(str(uuid4()),parent=parent_,display_name="ForStatement")
     word = CurrentToken()
 
     if word[1] == "for":
-        Node("for",parent=rForSt)
+        Node(str(uuid4()),parent=rForSt,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[0] == "ID":
-            Node(word[1],parent=rForSt)
+            Node(str(uuid4()),parent=rForSt,display_name=word[1])
             NextToken()
             word = CurrentToken()
 
             if word[1] == ":=":
-                Node(":=",parent=rForSt)
+                Node(str(uuid4()),parent=rForSt,display_name=word[1])
                 NextToken()
                 word = CurrentToken()
 
                 if word[0] in ["NUM","STRING"]:
-                    Node(word[1],parent=rForSt)
+                    Node(str(uuid4()),parent=rForSt,display_name=word[1])
                     NextToken()
                     word = CurrentToken()
 
                     if word[1] in ["to","downto"]:
-                        Node(word[1],parent=rForSt)
+                        Node(str(uuid4()),parent=rForSt,display_name=word[1])
                         NextToken()
 
                         if Expr(rForSt):
                             word = CurrentToken()
 
                             if word[1] == "do":
-                                Node(word[1],parent=rForSt)
+                                Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                 NextToken()
                                 word = CurrentToken()
 
                                 if word[1] == "begin":
-                                    Node(word[1],parent=rForSt)
+                                    Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                     NextToken()
 
                                     if StatementList(rForSt):
                                         word = CurrentToken()
 
                                         if word[1] == "end":
-                                            Node("end",parent=rForSt)
+                                            Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                             NextToken()
                                             word = CurrentToken()
 
                                             if word[1] == ";":
-                                                Node(";",parent=rForSt)
+                                                Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                                 NextToken()
                                                 return True
                                             else:
-                                                Fail("ForStatement: ")
+                                                Fail(word[1],word[2])
                                         else:
-                                            Fail("ForStatement: ")
+                                            Fail(word[1],word[2])
                                     return False
                                 else:
-                                    Fail("ForStatement: ")
+                                    Fail(word[1],word[2])
                             else:
-                                Fail("ForStatement: ")
+                                Fail(word[1],word[2])
 
                         return False
                     else:
-                        Fail("ForStatement: ")
+                        Fail(word[1],word[2])
                 else:
-                    Fail("ForStatement: ")
+                    Fail(word[0],word[2])
             else:
-                Fail("ForStatement: ")
+                Fail(word[1],word[2])
         else:
-            Fail("ForStatement: ")
+            Fail(word[0],word[2])
     else:
-        Fail("ForStatement: ")
+        Fail(word[1],word[2])
     
     return False
 
@@ -441,16 +455,16 @@ def ForStatement(parent_=None):
 def IfStatement(parent_=None):
     #IfStatement -> if (Expr) then begin StatementList end; IfStatement'
 
-    rIfStatement = Node("IfStatement",parent=parent_)
+    rIfStatement = Node(str(uuid4()),parent=parent_,display_name="IfStatement")
     word = CurrentToken()
     
     if word[1] == "if":
-        Node("if",parent=rIfStatement)
+        Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[1] == "(":
-            Node("(",parent=rIfStatement)
+            Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
             NextToken()
             word = CurrentToken()
 
@@ -458,54 +472,54 @@ def IfStatement(parent_=None):
                 word = CurrentToken()
 
                 if word[1] == ")":
-                    Node(")",parent=rIfStatement)
+                    Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                     NextToken()
                     word = CurrentToken()
 
                     if word[1] == "then":
-                        Node("then",parent=rIfStatement)
+                        Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                         NextToken()
                         word = CurrentToken()
 
                         if word[1] == "begin":
-                            Node("begin",parent=rIfStatement)
+                            Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                             NextToken()
                             
                             if StatementList(rIfStatement):
                                 word = CurrentToken()
 
                                 if word[1] == "end":
-                                    Node("end",parent=rIfStatement)
+                                    Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                                     NextToken()
                                     word = CurrentToken()
 
                                     if word[1] == ";":
-                                        Node(";",parent=rIfStatement)
+                                        Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                                         NextToken()
                                         return IfStatementPrime(rIfStatement)
                                     
                                     else:
-                                        Fail("IfStatement: ")
+                                        Fail(word[1],word[2])
                                 else:
-                                    Fail("IfStatement: ")
+                                    Fail(word[1],word[2])
                             return False
                         else:
-                            Fail("IfStatement: ")
+                            Fail(word[1],word[2])
                     else:
-                        Fail("IfStatement: ")
+                        Fail(word[1],word[2])
                 else:
-                    Fail("IfStatement: ")
+                    Fail(word[1],word[2])
             return False
         else:
-            Fail("IfStatement: ")
+            Fail(word[1],word[2])
     else:
-        Fail("IfStatement: ")
+        Fail(word[1],word[2])
 
     return False
 
 
 def IfStatementPrime(parent_=None):
-    rIfStatementPrime = Node("IfStatemen'",parent=parent_)
+    rIfStatementPrime = Node(str(uuid4()),parent=parent_,display_name="IfStatement'")
     word = CurrentToken()
     
     #IfStatement' -> e
@@ -515,70 +529,70 @@ def IfStatementPrime(parent_=None):
 
     #IfStatement' -> else begin StatementList end;
     elif word[1] == "else":
-        Node("else",parent=rIfStatementPrime)
+        Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[1] == "begin":
-            Node("begin",parent=rIfStatementPrime)
+            Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
             NextToken()
 
             if StatementList(rIfStatementPrime):
                 word = CurrentToken()
 
                 if word[1] == "end":
-                    Node("end",parent=rIfStatementPrime)
+                    Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
                     NextToken()
                     word = CurrentToken()
 
                     if word[1] == ";":
-                        Node(";",parent=rIfStatementPrime)
+                        Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
                         NextToken()
                         return True
                     else:
-                        Fail("IfStatement' :")
+                        Fail(word[1],word[2])
                 else:
-                    Fail("IfStatement' :")
+                    Fail(word[1],word[2])
             
             return False
         else:
-            Fail("IfStatement' :")
+            Fail(word[1],word[2])
  
-    Fail("IfStatement' :")
+    Fail(word[1],word[2])
     return False 
 
 
 def Assign(parent_=None):
     #Assign -> id := Expr;
 
-    rAssign = Node("Assign",parent=parent_)
+    rAssign = Node(str(uuid4()),parent=parent_,display_name="Assign")
     word = CurrentToken()
 
     if word[0] == "ID":
-        Node(word[1],parent=rAssign)
+        Node(str(uuid4()),parent=rAssign,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[1] == ":=":
-            Node(":=",parent=rAssign)
+            Node(str(uuid4()),parent=rAssign,display_name=word[1])
             NextToken()
 
             if Expr(rAssign):
                 word = CurrentToken()
 
                 if word[1] == ";":
-                    Node(";",parent=rAssign)
+                    Node(str(uuid4()),parent=rAssign,display_name=word[1])
                     NextToken()
                     return True
                 else:
-                    Fail("Assign: ")
+                    Fail(word[1],word[2])
                     return False 
 
             return False
         else:
-            Fail("Assign: ")
+            Fail(word[1],word[2])
     else:
-        Fail("Assign: ")
+        Fail(word[0],word[2])
 
     return False
 
@@ -586,11 +600,11 @@ def Assign(parent_=None):
 def Expr(parent_= None):
     #Expr -> not Expr Expr'
 
-    rExpr = Node("Expr",parent = parent_)
+    rExpr = Node(str(uuid4()),parent = parent_,display_name="Expr")
     word = CurrentToken()
 
     if word[1] == "not":
-        Node("not",parent=rExpr)
+        Node(str(uuid4()),parent=rExpr,display_name=word[1])
         NextToken()
 
         if Expr(rExpr):
@@ -602,7 +616,7 @@ def Expr(parent_= None):
     elif Expr2(rExpr):
         return ExprPrime(rExpr) 
 
-    Fail("Expr: ")
+    Fail(word[1],word[2])
     return False 
 
 
@@ -610,10 +624,10 @@ def ExprPrime(parent_=None):
     #Expr' -> BooleanOp Expr2 Expr'
 
     word = CurrentToken()
-    rExprPrime = Node("Expr'",parent=parent_)
+    rExprPrime = Node(str(uuid4()),parent=parent_,display_name="Expr'")
 
     if word[1] in ["and","or"]:
-        Node(word[1],parent=rExprPrime)
+        Node(str(uuid4()),parent=rExprPrime,display_name=word[1])
         NextToken()
 
         if Expr2(rExprPrime):
@@ -626,14 +640,14 @@ def ExprPrime(parent_=None):
         rExprPrime.parent = None
         return True
 
-    Fail("Expr': ")
+    Fail(word[1],word[2])
     return False 
 
 
 def Expr2(parent_=None):
     #Expr2 -> Expr3 Expr2'
 
-    rExpr2 = Node("Expr2",parent=parent_)
+    rExpr2 = Node(str(uuid4()),parent=parent_,display_name="Expr2")
 
     if Expr3(rExpr2):
         return Expr2Prime(rExpr2)
@@ -643,11 +657,11 @@ def Expr2(parent_=None):
 def Expr2Prime(parent_=None):
     #Expr2' -> RelOp Expr3 Expr2'
 
-    rExpr2Prime = Node("Expr2'",parent=parent_)
+    rExpr2Prime = Node(str(uuid4()),parent=parent_,display_name="Expr2'")
     word = CurrentToken()
 
     if word[1] in ["=","<>","<","<=",">=",">"]:
-        Node(word[1],parent=rExpr2Prime)
+        Node(str(uuid4()),parent=rExpr2Prime,display_name=word[1])
         NextToken()
 
         if Expr3(rExpr2Prime):
@@ -659,14 +673,14 @@ def Expr2Prime(parent_=None):
         rExpr2Prime.parent = None
         return True
     
-    Fail("Expr2': ")
+    Fail(word[1],word[2])
     return False
 
 
 def Expr3(parent_=None):
     #Expr3 -> Term Expr3'
 
-    rExpr3 = Node("Expr3",parent=parent_)
+    rExpr3 = Node(str(uuid4()),parent=parent_,display_name="Expr3")
 
     if Term(rExpr3):
         return Expr3Prime(rExpr3)
@@ -677,11 +691,11 @@ def Expr3Prime(parent_=None):
     #Expr3' -> + Term Expr3'
     #Expr3' -> - Term Expr3'
 
-    rExpr3Prime = Node("Expr3'",parent=parent_)
+    rExpr3Prime = Node(str(uuid4()),parent=parent_,display_name="Expr3'")
     word = CurrentToken()
 
     if word[1] in ["+","-"]:
-        Node(word[1],parent=rExpr3Prime)
+        Node(str(uuid4()),parent=rExpr3Prime,display_name=word[1])
         NextToken()
 
         if Term(rExpr3Prime):
@@ -693,14 +707,14 @@ def Expr3Prime(parent_=None):
         rExpr3Prime.parent = None
         return True
 
-    Fail("Expr3': ")
+    Fail(word[1],word[2])
     return False
 
 
 def Term(parent_=None):
     #Term -> Factor Term'
 
-    rTerm = Node("Term",parent=parent_)
+    rTerm = Node(str(uuid4()),parent=parent_,display_name="Term")
     if Factor(rTerm):
         return TermPrime(rTerm)
     return False
@@ -712,11 +726,11 @@ def TermPrime(parent_=None):
     #Term' -> div Factor Term'
     #Term' -> mod Factor Term'
 
-    rTermPrime = Node("Term'",parent=parent_)
+    rTermPrime = Node(str(uuid4()),parent=parent_,display_name="Term'")
     word = CurrentToken()
 
     if word[1] in ["*","/","div","mod"]:
-        Node(word[1],parent=parent_)
+        Node(str(uuid4()),parent=parent_,display_name=word[1])
         NextToken()
 
         if Factor(rTermPrime):
@@ -728,86 +742,86 @@ def TermPrime(parent_=None):
         rTermPrime.parent = None
         return True
 
-    Fail("Term': ")
+    Fail(word[1],word[2])
     return False
 
 
 def Factor(parent_=None):
     #Factor -> id
 
-    rFactor = Node("Factor",parent=parent_)
+    rFactor = Node(str(uuid4()),parent=parent_,display_name="Factor")
     word = CurrentToken()
 
     if word[0] == "ID":
-        Node(word[1],parent=rFactor)
+        Node(str(uuid4()),parent=rFactor,display_name=word[1])
         NextToken()
         return True
     
     #Factor -> Value
 
     elif word[0] in ["NUM","STRING"]:
-        Node(word[1],parent=rFactor)
+        Node(str(uuid4()),parent=rFactor,display_name=word[1])
         NextToken()
         return True
     
     #Factor -> (Expr)
 
     elif word[1] == "(":
-        Node(word[1],parent=rFactor)
+        Node(str(uuid4()),parent=rFactor,display_name=word[1])
         NextToken()
 
         if Expr(rFactor):
             word = CurrentToken()
 
             if word[1] == ")":
-                Node(word[1],parent=rFactor)
+                Node(str(uuid4()),parent=rFactor,display_name=word[1])
                 NextToken()
                 return True
 
             else:
-                Fail("Factor: ")
+                Fail(word[1],word[2])
         
         return False
     
-    Fail("Factor: ")
+    Fail(word[0],word[2])
     return False
 
 
 def WriteLn(parent_=None):
     #WriteLn -> writeln (v_string)
 
-    rWriteLn = Node("WriteLn",parent=parent_)
+    rWriteLn = Node(str(uuid4()),parent=parent_,display_name="WriteLn")
     word = CurrentToken()
     
 
     if word[1] == "writeln":
-        Node("writeln",parent=rWriteLn)
+        Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[1] == "(":
-            Node("(",parent=rWriteLn)
+            Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
             NextToken()
             word = CurrentToken()
             
             if word[0] == "STRING":
-                Node(word[1],parent=rWriteLn)
+                Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
                 NextToken()
                 word = CurrentToken()
                 
                 if word[1] == ")":
-                    Node(")",parent=rWriteLn)
+                    Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
                     NextToken()
                     return True
                 else:
-                    Fail("WriteLn: ")
+                    Fail(word[1],word[2])
 
             else:
-                Fail("WriteLn: ")
+                Fail(word[0],word[2])
         else:
-            Fail("WriteLn: ")
+            Fail(word[1],word[2])
     else:
-        Fail("WriteLn: ")
+        Fail(word[1],word[2])
 
     return False 
 
@@ -815,43 +829,47 @@ def WriteLn(parent_=None):
 def Write(parent_=None):
     #Write -> write (Expr)
 
-    rWrite = Node("Write",parent=parent_)
+    rWrite = Node(str(uuid4()),parent=parent_,display_name="Write")
     word = CurrentToken()
 
     if word[1] == "write":
-        Node("write",parent=rWrite)
+        Node(str(uuid4()),parent=rWrite,display_name=word[1])
         NextToken()
         word = CurrentToken()
 
         if word[1] == "(":
-            Node("(",parent=rWrite)
+            Node(str(uuid4()),parent=rWrite,display_name=word[1])
             NextToken()
 
             if Expr(rWrite):
                 word = CurrentToken()
 
                 if word[1] == ")":
-                    Node(")",parent=rWrite)
+                    Node(str(uuid4()),parent=rWrite,display_name=word[1])
                     NextToken()
                     return True 
                 else:
-                    Fail("Write: ")
+                    Fail(word[1],word[2])
 
             return False 
         else:
-            Fail("Write: ")
+            Fail(word[1],word[2])
     else:
-        Fail("Write: ")
+        Fail(word[1],word[2])
     
     return False
 
 
 if __name__ == '__main__':
+    
     Program()
 
     if len(ERRORS) != 0:
         for e in ERRORS:
             print(e)
+    
+    else:
+        generateTree(rProg)
 
 
 

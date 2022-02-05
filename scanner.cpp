@@ -51,14 +51,14 @@ char peek2Char(string line,int pos){
     return line[pos+2];
 }
 
-void getToken(map<string,string>::iterator it,ofstream &f){
-    Token t(it->second,it->first);
+void getToken(map<string,string>::iterator it,ofstream &f,int l){
+    Token t(it->second,it->first,l);
     t.toString();
     f<<t.toString();
 }
 
-void getToken(string type, string value,ofstream &f){
-    Token t(type,value);
+void getToken(string type, string value,ofstream &f,int l){
+    Token t(type,value,l);
     t.toString();
     f<<t.toString();
 }
@@ -180,7 +180,7 @@ int main(int argc, char** argv){
 
                 //verificando si token en palabras definidas
                 if(it != words.end()){
-                    getToken(it,fileWrite);
+                    getToken(it,fileWrite,num_line);
                     word.clear();
                 }
 
@@ -223,7 +223,7 @@ int main(int argc, char** argv){
                                 error_id = false;
                             }
                             else{
-                                getToken(type_token,word,fileWrite);
+                                getToken(type_token,word,fileWrite,num_line);
                             }
                             word.clear();
                         }
@@ -268,7 +268,7 @@ int main(int argc, char** argv){
                                                 error_num = false;
                                             }
                                             else{
-                                                getToken(type_token,word,fileWrite);
+                                                getToken(type_token,word,fileWrite,num_line);
                                             }
 
                                         }catch(out_of_range& e){
@@ -305,7 +305,7 @@ int main(int argc, char** argv){
                                                 error_num = false;
                                             }
                                             else{
-                                                getToken(type_token,word,fileWrite);
+                                                getToken(type_token,word,fileWrite,num_line);
                                             }
 
                                         }catch(out_of_range& e){
@@ -328,7 +328,7 @@ int main(int argc, char** argv){
                             if(tmp_letter2 != '.')
                                 doubleType = true;
                             else{
-                                getToken(type_token,word,fileWrite);
+                                getToken(type_token,word,fileWrite,num_line);
                                 word.clear();
                             }
                         }
@@ -356,7 +356,7 @@ int main(int argc, char** argv){
                                     error_string = false;
                                 }
                                 else{
-                                    getToken(type_token,word,fileWrite);
+                                    getToken(type_token,word,fileWrite,num_line);
                                 }
                                 word.clear();
                             }

@@ -12,3 +12,4 @@ begin
             writeln(i, ' is prime' );
     end;
 end.
+

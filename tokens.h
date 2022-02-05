@@ -10,15 +10,17 @@ using namespace std;
 struct Token{
     string type;
     string val;
+    int line;
 
-    Token(string t,string v){
+    Token(string t,string v,int l=0){
         type = t;
         val = v;
+        line = l;
     }
 
     string toString(){
         string s;
-        s = "<"+type+"|"+val+">\n";
+        s = "<"+type+"|"+val+">|"+to_string(line)+"\n";
         return s;
     }
 };
