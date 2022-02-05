@@ -158,6 +158,10 @@ def ConstBlock(parent_=None):
         return True
 
     Fail(word[1],word[2])
+    while word[1] not in ["begin","var"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False
 
 
@@ -188,10 +192,23 @@ def ConstList(parent_=None):
                     return ConstList(rConstList) 
                 else:
                     Fail(word[1],word[2])
+                    while word[1] not in ["begin","var"]:
+                        NextToken()
+                        word = CurrentToken()
+                        return True
+
             else:
-                Fail(word[0],word[2]) 
+                Fail(word[0],word[2])
+                while word[1] not in ["begin","var"]:
+                    NextToken()
+                    word = CurrentToken()
+                    return True
         else:
             Fail(word[1],word[2])
+            while word[1] not in ["begin","var"]:
+                NextToken()
+                word = CurrentToken()
+                return True
 
         return False 
     
@@ -202,6 +219,10 @@ def ConstList(parent_=None):
         return True 
 
     Fail(word[0],word[2])
+    while word[1] not in ["begin","var"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False 
 
       
@@ -223,6 +244,10 @@ def VarBlock(parent_=None):
         return True
     
     Fail(word[1],word[2])
+    while word[1] != "begin":
+        NextToken()
+        word = CurrentToken()
+        return True
     return False 
 
 
@@ -258,10 +283,22 @@ def VarList(parent_=None):
                     return VarList(rVarList)                   
                 else:
                     Fail(word[1],word[2])
+                    while word[1] != "begin":
+                        NextToken()
+                        word = CurrentToken()
+                        return True
             else:
                 Fail(word[1],word[2])
+                while word[1] != "begin":
+                    NextToken()
+                    word = CurrentToken()
+                    return True
         else:
             Fail(word[1],word[2])
+            while word[1] != "begin":
+                NextToken()
+                word = CurrentToken()
+                return True
 
         return False
 
@@ -281,6 +318,11 @@ def VarDeci(parent_=None):
         return VarDeciPrime(rVarDeci)
     
     Fail(word[0],word[2])
+    while word[1] not in [":"]:
+        NextToken()
+        word = CurrentToken()
+        return True
+
     return False
 
 
@@ -302,6 +344,10 @@ def VarDeciPrime(parent_=None):
         return True
     
     Fail(word[1],word[2])
+    while word[1] != ":":
+        NextToken()
+        word = CurrentToken()
+        return True
     return False
 
 
@@ -370,6 +416,11 @@ def Statement(parent_=None):
         return True
     
     Fail(word[1],word[2])
+    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+        NextToken()
+        word = CurrentToken()
+        return True
+
     return False
 
 
@@ -429,23 +480,56 @@ def ForStatement(parent_=None):
                                                 return True
                                             else:
                                                 Fail(word[1],word[2])
+                                                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                                    NextToken()
+                                                    word = CurrentToken()
+                                                    return True
                                         else:
                                             Fail(word[1],word[2])
+                                            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                                NextToken()
+                                                word = CurrentToken()
+                                                return True
                                     return False
                                 else:
                                     Fail(word[1],word[2])
+                                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                        NextToken()
+                                        word = CurrentToken()
+                                        return True
                             else:
                                 Fail(word[1],word[2])
+                                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                    NextToken()
+                                    word = CurrentToken()
+                                    return True
 
                         return False
                     else:
                         Fail(word[1],word[2])
+                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                            NextToken()
+                            word = CurrentToken()
+                            return True
                 else:
                     Fail(word[0],word[2])
+                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        NextToken()
+                        word = CurrentToken()
+                        return True
+            
             else:
                 Fail(word[1],word[2])
+                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    NextToken()
+                    word = CurrentToken()
+                    return True
         else:
             Fail(word[0],word[2])
+            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                NextToken()
+                word = CurrentToken()
+                return True
     else:
         Fail(word[1],word[2])
     
@@ -500,18 +584,42 @@ def IfStatement(parent_=None):
                                     
                                     else:
                                         Fail(word[1],word[2])
+                                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                            NextToken()
+                                            word = CurrentToken()
+                                            return True
                                 else:
                                     Fail(word[1],word[2])
+                                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                        NextToken()
+                                        word = CurrentToken()
+                                        return True
                             return False
                         else:
                             Fail(word[1],word[2])
+                            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                NextToken()
+                                word = CurrentToken()
+                                return True
                     else:
                         Fail(word[1],word[2])
+                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                            NextToken()
+                            word = CurrentToken()
+                            return True
                 else:
                     Fail(word[1],word[2])
+                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        NextToken()
+                        word = CurrentToken()
+                        return True
             return False
         else:
             Fail(word[1],word[2])
+            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                NextToken()
+                word = CurrentToken()
+                return True
     else:
         Fail(word[1],word[2])
 
@@ -551,12 +659,24 @@ def IfStatementPrime(parent_=None):
                         return True
                     else:
                         Fail(word[1],word[2])
+                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                            NextToken()
+                            word = CurrentToken()
+                            return True
                 else:
                     Fail(word[1],word[2])
+                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        NextToken()
+                        word = CurrentToken()
+                        return True
             
             return False
         else:
             Fail(word[1],word[2])
+            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                NextToken()
+                word = CurrentToken()
+                return True
  
     Fail(word[1],word[2])
     return False 
@@ -586,11 +706,19 @@ def Assign(parent_=None):
                     return True
                 else:
                     Fail(word[1],word[2])
-                    return False 
+                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        NextToken()
+                        word = CurrentToken()
+                    return True
 
             return False
         else:
             Fail(word[1],word[2])
+            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                NextToken()
+                word = CurrentToken()
+            return True
+
     else:
         Fail(word[0],word[2])
 
@@ -617,6 +745,10 @@ def Expr(parent_= None):
         return ExprPrime(rExpr) 
 
     Fail(word[1],word[2])
+    while word[1] not in [";","do",")"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False 
 
 
@@ -641,6 +773,10 @@ def ExprPrime(parent_=None):
         return True
 
     Fail(word[1],word[2])
+    while word[1] not in [";","do",")"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False 
 
 
@@ -674,6 +810,10 @@ def Expr2Prime(parent_=None):
         return True
     
     Fail(word[1],word[2])
+    while word[1] not in ["and","or",";","do",")"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False
 
 
@@ -708,6 +848,10 @@ def Expr3Prime(parent_=None):
         return True
 
     Fail(word[1],word[2])
+    while word[1] not in ["=","<>","<","<=",">=",">","and","or",";","do",")"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False
 
 
@@ -743,6 +887,10 @@ def TermPrime(parent_=None):
         return True
 
     Fail(word[1],word[2])
+    while word[1] not in ["+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False
 
 
@@ -780,10 +928,18 @@ def Factor(parent_=None):
 
             else:
                 Fail(word[1],word[2])
+                while word[1] not in ["mod","div","/","*","+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
+                    NextToken()
+                    word = CurrentToken()
+                    return True
         
         return False
     
     Fail(word[0],word[2])
+    while word[1] not in ["mod","div","/","*","+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
+        NextToken()
+        word = CurrentToken()
+        return True
     return False
 
 
@@ -815,11 +971,24 @@ def WriteLn(parent_=None):
                     return True
                 else:
                     Fail(word[1],word[2])
+                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        NextToken()
+                        word = CurrentToken()
+                    return True
 
             else:
                 Fail(word[0],word[2])
+                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    NextToken()
+                    word = CurrentToken()
+                return True
+
         else:
             Fail(word[1],word[2])
+            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                NextToken()
+                word = CurrentToken()
+            return True
     else:
         Fail(word[1],word[2])
 
@@ -840,20 +1009,30 @@ def Write(parent_=None):
         if word[1] == "(":
             Node(str(uuid4()),parent=rWrite,display_name=word[1])
             NextToken()
-
+            
             if Expr(rWrite):
+                
                 word = CurrentToken()
-
+                
                 if word[1] == ")":
                     Node(str(uuid4()),parent=rWrite,display_name=word[1])
                     NextToken()
                     return True 
                 else:
                     Fail(word[1],word[2])
+                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        NextToken()
+                        word = CurrentToken()
+                    return True
 
             return False 
         else:
             Fail(word[1],word[2])
+            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                NextToken()
+                word = CurrentToken()
+            return True
+
     else:
         Fail(word[1],word[2])
     
@@ -863,6 +1042,7 @@ def Write(parent_=None):
 if __name__ == '__main__':
     
     Program()
+    #generateTree(rProg)
 
     if len(ERRORS) != 0:
         for e in ERRORS:
