@@ -35,8 +35,8 @@ Statement - IfStatement
 Statement - Assign
 Statement - WriteLn
 Statement - Write
-Statement - break
-Statement - continue
+Statement - break;
+Statement - continue;
 
 ForStatement - for id := Value To Expr do begin StatementList end;
 
@@ -82,9 +82,9 @@ RelOp - >
 BooleanOp - and
 BooleanOp - or
 
-WriteLn - writeln (v_string)
+WriteLn - writeln (v_string);
 
-Write - write (Expr)
+Write - write (Expr);
 
 To - to
 To - downto

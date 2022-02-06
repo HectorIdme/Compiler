@@ -1,0 +1,10 @@
+program Test3;
+var
+   counter :integer;
+
+   begin
+      for counter := 1 to 7 do
+	      begin
+            writeln('for loop');   
+         end;
+end.

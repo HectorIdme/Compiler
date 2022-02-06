@@ -1,10 +1,15 @@
+from glob import glob
+from unicodedata import numeric
 from anytree import Node, RenderTree
 from anytree.exporter import DotExporter
 from uuid import  uuid4
 
+from numpy import nancumsum
+
 TOKENS = []
 ERRORS = []
 rProg = ""
+num_linea = 1
 
 try:
     with open("tokens_ans.txt") as file:
@@ -45,17 +50,19 @@ def CurrentToken():
     try:
         return TOKENS[0]
     except IndexError:
-        return 
+        return None
 
 def Fail(msg,line=0):
-    ERRORS.append("Error de sintaxis en la linea "+ str(line) + " inesperado "+ str(msg))
+    ERRORS.append("Error de sintaxis en la linea "+ str(line) + " se esperaba "+ str(msg))
 
 
 def generateTree(root):
     print()
     print("Arbol Generado")
+    
     for pre,fill, node in RenderTree(root):
         print("%s%s" % (pre, node.display_name))
+    
 
     DotExporter(root,nodeattrfunc=lambda node: 'label="{}"'.format(node.display_name)).to_picture("parseTree.png")
     DotExporter(root,nodeattrfunc=lambda node: 'label="{}"'.format(node.display_name)).to_dotfile("parseTreeFile.dot")
@@ -64,23 +71,27 @@ def generateTree(root):
 def Program():
     #Program -> program id; ConstBlock VarBlock MainCode
     global rProg
+    global num_linea
 
     rProg = Node(str(uuid4()),display_name="Program")
     word = CurrentToken()
 
-    if word[1] == "program":
+    if word and word[1] == "program":
         Node(str(uuid4()),parent = rProg,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[0] == "ID":
+        if word and word[0] == "ID":
             Node(str(uuid4()),parent = rProg, display_name=word[1])
             NextToken()
+            num_linea = word[2]
             word = CurrentToken()
 
-            if word[1] == ";":
+            if word and word[1] == ";":
                 Node(str(uuid4()),parent = rProg,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
 
                 if ConstBlock(rProg):
 
@@ -97,257 +108,308 @@ def Program():
                 return False 
 
             else:
-                Fail(word[1],word[2]) 
+                Fail(";",num_linea)
+                TOKENS.clear() 
         else:
-        
-            Fail(word[0],word[2]) 
+            Fail("ID",num_linea) 
+            TOKENS.clear()
     else:
-        Fail(word[1],word[2])            
+        Fail("program",num_linea)
+        TOKENS.clear()           
     
-    return False
+    return True
     
 
 def MainCode(parent_=None):
     #MainCode -> begin StatementList end.
 
+    global num_linea
     rMainCode = Node(str(uuid4()),parent=parent_,display_name="MainCode")
     word = CurrentToken()
-    if word[1] == "begin":
+    if word and word[1] == "begin":
         Node(str(uuid4()),parent=rMainCode,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         
         if StatementList(rMainCode):
             word = CurrentToken()
             
-            if word[1] == "end":
+            if word and word[1] == "end":
                 Node(str(uuid4()),parent=rMainCode,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
 
-                if word[1] == ".":
+                if word and word[1] == ".":
                     Node(str(uuid4()),parent=rMainCode,display_name=word[1])
                     return True
                 else:
-                    Fail(word[1],word[2])
+                    Fail(".",num_linea)
+                    TOKENS.clear()
             else:
-                Fail(word[1],word[2])
+                Fail("end",num_linea)
+                TOKENS.clear()
 
         return False 
 
     else:
-        Fail(word[1],word[2])
+        Fail("begin",num_linea)
+        TOKENS.clear()
     
-    return False 
+    return True 
         
 
 def ConstBlock(parent_=None):
     #ConstBlock -> const ConstList
 
+    global num_linea
+    lostToken = True
     rConstBlock = Node(str(uuid4()),parent=parent_,display_name="ConstBlock")
     word  = CurrentToken()
 
-    if word[1] == "const":
+    if word and word[1] == "const":
         Node(str(uuid4()),parent = rConstBlock,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         return ConstList(rConstBlock)
     
     #ConstBlock -> e
 
-    elif word[1] in ["begin","var"]:
+    elif word and word[1] in ["begin","var"]:
         rConstBlock.parent = None
         return True
 
-    Fail(word[1],word[2])
-    while word[1] not in ["begin","var"]:
+    while word and word[1] not in ["begin","var"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
+    
+    if word: return True
+    else: Fail("const|begin|var",num_linea)  
+    
     return False
 
 
 def ConstList(parent_=None):
     #ConstList -> id = Value; ConstList
 
+    global num_linea
     rConstList = Node(str(uuid4()),parent=parent_,display_name="ConstList")
     word = CurrentToken()
 
-    if word[0] == "ID":
+    if word and word[0] == "ID":
         Node(str(uuid4()), parent=rConstList,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == "=":
+        if word and word[1] == "=":
             Node(str(uuid4()),parent=rConstList,display_name=word[1])
             NextToken()
+            num_linea = word[2]
             word = CurrentToken()
 
-            if word[0] in ["STRING","NUM"]:
+            if word and word[0] in ["STRING","NUM"]:
                 Node(str(uuid4()),parent=rConstList,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
 
-                if word[1] == ";":
+                if word and word[1] == ";":
                     Node(str(uuid4()),parent=rConstList,display_name=word[1])
                     NextToken()
+                    num_linea = word[2]
                     return ConstList(rConstList) 
                 else:
-                    Fail(word[1],word[2])
-                    while word[1] not in ["begin","var"]:
+                    Fail(";",num_linea)
+                    while word and word[1] not in ["begin","var"]:
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                        return True
-
+                    if word: return True
+                    else: return False
             else:
-                Fail(word[0],word[2])
-                while word[1] not in ["begin","var"]:
+                Fail("STRING|NUM",num_linea)
+                while word and word[1] not in ["begin","var"]:
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
-                    return True
+                if word: return True
+                else: return False
         else:
-            Fail(word[1],word[2])
-            while word[1] not in ["begin","var"]:
+            Fail("=",num_linea)
+            while word and word[1] not in ["begin","var"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-                return True
-
-        return False 
+            if word: return True
+            else: return False
     
     #ConstList -> e
 
-    elif word[1] in ["begin","var"]:
+    elif word and word[1] in ["begin","var"]:
         rConstList.parent = None
         return True 
 
-    Fail(word[0],word[2])
-    while word[1] not in ["begin","var"]:
+    Fail("ID|begin|var",num_linea)
+    while word and word[1] not in ["begin","var"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
-    return False 
+    
+    if word: return True
+    else: Fail("ID|begin|var",num_linea) 
+
+    return False
 
       
 def VarBlock(parent_=None):
     #VarBlock -> var VarList
 
+    global num_linea
     rVarBlock = Node(str(uuid4()),parent=parent_,display_name="VarBlock")
     word = CurrentToken()
 
-    if word[1] == "var":
+    if word and word[1] == "var":
         Node(str(uuid4()),parent=rVarBlock,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         return VarList(rVarBlock)
     
     #VarBlock -> e
 
-    elif word[1] == "begin":
+    elif word and word[1] == "begin":
         rVarBlock.parent = None
         return True
     
-    Fail(word[1],word[2])
-    while word[1] != "begin":
+    while word and word[1] != "begin":
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
+
+    if word:return True
+    else: Fail("var|begin",num_linea)
+
     return False 
 
 
 def VarList(parent_=None):
 
+    global num_linea
     rVarList = Node(str(uuid4()),parent=parent_,display_name="VarList")
     word = CurrentToken()
 
     #VarList -> e
 
-    if word[1] == "begin":
+    if word and word[1] == "begin":
         rVarList.parent = None
         return True
     
     #VarList -> VarDeci : Type ; VarList
 
     elif VarDeci(rVarList):
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == ":":
+        if word and word[1] == ":":
             Node(str(uuid4()),parent=rVarList,display_name=word[1])
             NextToken()
+            num_linea = word[2]
             word = CurrentToken()
 
-            if word[1] in ["real","integer","string"]:
+            if word and word[1] in ["real","integer","string"]:
                 Node(str(uuid4()),parent=rVarList,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
 
-                if word[1] == ";":
+                if word and word[1] == ";":
                     Node(str(uuid4()),parent=rVarList,display_name=word[1])
                     NextToken()
+                    num_linea = word[2]
                     return VarList(rVarList)                   
                 else:
-                    Fail(word[1],word[2])
-                    while word[1] != "begin":
+                    Fail(";",num_linea)
+                    while word and word[1] != "begin":
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                        return True
+                    if word: return True
+                    else: return False
             else:
-                Fail(word[1],word[2])
-                while word[1] != "begin":
+                Fail("real|integer|string",num_linea)
+                while word and word[1] != "begin":
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
-                    return True
+                if word: return True
+                else: return False
         else:
-            Fail(word[1],word[2])
-            while word[1] != "begin":
+            Fail(":",num_linea)
+            while word and word[1] != "begin":
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-                return True
+            if word: return True
+            else: return False
 
-        return False
-
-    Fail(word[1],word[2])
+    while word and word[0] not in ["ID","BEGIN"]:
+        NextToken()
+        num_linea = word[2]
+        word = CurrentToken()
+    
+    if word: return True
+    else: Fail("ID|begin",num_linea)
     return False
 
 
 def VarDeci(parent_=None):
     #VarDeci -> id VarDeci'
-
+    global num_linea
     rVarDeci = Node(str(uuid4()),parent=parent_,display_name="VarDeci")
     word = CurrentToken()
 
-    if word[0] == "ID":
+    if word and word[0] == "ID":
         Node(str(uuid4()),parent=rVarDeci,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         return VarDeciPrime(rVarDeci)
     
-    Fail(word[0],word[2])
-    while word[1] not in [":"]:
+    while word and word[1] != ":":
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
-
+    
+    if word: return True
+    else: Fail("ID|:",num_linea)
     return False
 
 
 def VarDeciPrime(parent_=None):
     #VarDeciPrime -> , VarDeci
-
+    global num_linea
     rVarDeciPrime = Node(str(uuid4()),parent=parent_,display_name="VarDeci'")
     word = CurrentToken()
 
-    if word[1] == ",":
+    if word and word[1] == ",":
         Node(str(uuid4()),parent=rVarDeciPrime,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         return VarDeci(rVarDeciPrime)
     
     #VarDeciPrime -> e
 
-    elif word[1] == ":":
+    elif word and word[1] == ":":
         rVarDeciPrime.parent = None
         return True
     
-    Fail(word[1],word[2])
-    while word[1] != ":":
+    while word and word[1] != ":":
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
+    
+    if word: return True
+    else: Fail(",|:",num_linea)
     return False
 
 
@@ -362,12 +424,13 @@ def StatementList(parent_=None):
 
 
 def StatementListPrime(parent_=None):
+    global num_linea
     rStListPrime = Node(str(uuid4()),parent=parent_,display_name="StatementList'")
     word = CurrentToken() 
 
     #StatementList' -> e
 
-    if word[1] == "end":
+    if word and word[1] == "end":
         rStListPrime.parent = None
         return True
     
@@ -375,366 +438,464 @@ def StatementListPrime(parent_=None):
 
     elif StatementList(rStListPrime):
         return True
+    
+    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+        NextToken()
+        num_linea = word[2]
+        word = CurrentToken()
+    
+    if word: return True
+    else: Fail("END|FOR|IF|WRITELN|WRITE|BREAK|CONTINUE|ID",num_linea)
 
     return False 
 
 
 def Statement(parent_=None):
+    global num_linea
     rStatement = Node(str(uuid4()),parent=parent_,display_name="Statement")
     word = CurrentToken()
 
     #Statement -> ForStatement
-    if word[1] == "for":
+    if word and word[1] == "for":
         if ForStatement(rStatement):
             return True
 
     #Statement -> IfStatement
-    elif word[1] == "if":
+    elif word and word[1] == "if":
         if IfStatement(rStatement):
             return True
 
     #Statement -> Assign
-    elif word[0] == "ID":
+    elif word and word[0] == "ID":
         if Assign(rStatement):
             return True
     
     #Statement -> WriteLn
-    elif word[1] == "writeln":
+    elif word and word[1] == "writeln":
         if WriteLn(rStatement):
             return True
 
     #Statement -> Write
-    elif word[1] == "write":
+    elif word and word[1] == "write":
         if Write(rStatement):
             return True
     
     #Statement -> break
     #Statement -> continue
-    elif word[1] in ["break","continue"]:
+    elif word and word[1] in ["break","continue"]:
         Node(str(uuid4()),parent=rStatement,display_name=word[1])
         NextToken()
-        return True
-    
-    Fail(word[1],word[2])
-    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
-        NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
 
-    return False
+        if word and word[1] == ";":
+            Node(str(uuid4()),parent=rStatement,display_name=word[1])
+            NextToken()
+            num_linea = word[2]
+            return True
+        else:
+            Fail(";",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+                NextToken()
+                num_linea = word[2]
+                word = CurrentToken()
+            if word: return True
+            else: return False
+    
+
+    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+        NextToken()
+        num_linea = word[2]
+        word = CurrentToken()
+    
+    if word: return True
+    else: Fail("END|FOR|IF|WRITELN|WRITE|BREAK|CONTINUE|ID",num_linea)
+
+    return False 
 
 
 def ForStatement(parent_=None):
     #ForStatement -> for id := Value To Expr do begin StatementList end;
-
+    global num_linea
     rForSt = Node(str(uuid4()),parent=parent_,display_name="ForStatement")
     word = CurrentToken()
 
-    if word[1] == "for":
+    if word and word[1] == "for":
         Node(str(uuid4()),parent=rForSt,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[0] == "ID":
+        if word and word[0] == "ID":
             Node(str(uuid4()),parent=rForSt,display_name=word[1])
             NextToken()
+            num_linea = word[2]
             word = CurrentToken()
 
-            if word[1] == ":=":
+            if word and word[1] == ":=":
                 Node(str(uuid4()),parent=rForSt,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
 
-                if word[0] in ["NUM","STRING"]:
+                if word and word[0] in ["NUM","STRING"]:
                     Node(str(uuid4()),parent=rForSt,display_name=word[1])
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
 
-                    if word[1] in ["to","downto"]:
+                    if word and word[1] in ["to","downto"]:
                         Node(str(uuid4()),parent=rForSt,display_name=word[1])
                         NextToken()
+                        num_linea = word[2]
 
                         if Expr(rForSt):
                             word = CurrentToken()
 
-                            if word[1] == "do":
+                            if word and word[1] == "do":
                                 Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                 NextToken()
+                                num_linea = word[2]
                                 word = CurrentToken()
 
-                                if word[1] == "begin":
+                                if word and word[1] == "begin":
                                     Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                     NextToken()
+                                    num_linea = word[2]
 
                                     if StatementList(rForSt):
                                         word = CurrentToken()
 
-                                        if word[1] == "end":
+                                        if word and word[1] == "end":
                                             Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                             NextToken()
+                                            num_linea = word[2]
                                             word = CurrentToken()
 
-                                            if word[1] == ";":
+                                            if word and word[1] == ";":
                                                 Node(str(uuid4()),parent=rForSt,display_name=word[1])
                                                 NextToken()
+                                                num_linea = word[2]
                                                 return True
                                             else:
-                                                Fail(word[1],word[2])
-                                                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                                Fail(";",num_linea)
+                                                while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                                     NextToken()
+                                                    num_linea = word[2]
                                                     word = CurrentToken()
-                                                    return True
+                                                if word: return True
+                                                else: return False
                                         else:
-                                            Fail(word[1],word[2])
-                                            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                            Fail("end",num_linea)
+                                            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                                 NextToken()
+                                                num_linea = word[2]
                                                 word = CurrentToken()
-                                                return True
+                                            if word: return True
+                                            else: return False
+
                                     return False
                                 else:
-                                    Fail(word[1],word[2])
-                                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                    Fail("begin",num_linea)
+                                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                         NextToken()
+                                        num_linea = word[2]
                                         word = CurrentToken()
-                                        return True
+                                    if word: return True
+                                    else: return False
                             else:
-                                Fail(word[1],word[2])
-                                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                Fail("do",num_linea)
+                                while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                     NextToken()
+                                    num_linea = word[2]
                                     word = CurrentToken()
-                                    return True
+                                if word: return True
+                                else: return False
 
                         return False
                     else:
-                        Fail(word[1],word[2])
-                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        Fail("TO|DOWNTO",num_linea)
+                        while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                             NextToken()
+                            num_linea = word[2]
                             word = CurrentToken()
-                            return True
+                        if word: return True
+                        else: return False 
                 else:
-                    Fail(word[0],word[2])
-                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    Fail("NUM|STRING",num_linea)
+                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                        return True
+                    if word: return True
+                    else: return False
             
             else:
-                Fail(word[1],word[2])
-                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                Fail(":=",num_linea)
+                while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
-                    return True
+                if word: return True
+                else: return False
         else:
-            Fail(word[0],word[2])
-            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+            Fail("ID",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-                return True
+            if word: return True
+            else: return False
     else:
-        Fail(word[1],word[2])
+        Fail("FOR",num_linea)
     
     return False
 
 
 def IfStatement(parent_=None):
     #IfStatement -> if (Expr) then begin StatementList end; IfStatement'
-
+    global num_linea
     rIfStatement = Node(str(uuid4()),parent=parent_,display_name="IfStatement")
     word = CurrentToken()
     
-    if word[1] == "if":
+    if word and word[1] == "if":
         Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == "(":
+        if word and word[1] == "(":
             Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
             NextToken()
+            num_linea = word[2]
             word = CurrentToken()
 
             if Expr(rIfStatement):
                 word = CurrentToken()
 
-                if word[1] == ")":
+                if word and word[1] == ")":
                     Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
 
-                    if word[1] == "then":
+                    if word and word[1] == "then":
                         Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
 
-                        if word[1] == "begin":
+                        if word and word[1] == "begin":
                             Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                             NextToken()
+                            num_linea = word[2]
                             
                             if StatementList(rIfStatement):
                                 word = CurrentToken()
 
-                                if word[1] == "end":
+                                if word and word[1] == "end":
                                     Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                                     NextToken()
+                                    num_linea = word[2]
                                     word = CurrentToken()
 
-                                    if word[1] == ";":
+                                    if word and word[1] == ";":
                                         Node(str(uuid4()),parent=rIfStatement,display_name=word[1])
                                         NextToken()
+                                        num_linea = word[2]
                                         return IfStatementPrime(rIfStatement)
                                     
                                     else:
-                                        Fail(word[1],word[2])
-                                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                        Fail(";",num_linea)
+                                        while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                             NextToken()
+                                            num_linea = word[2]
                                             word = CurrentToken()
-                                            return True
+                                        if word: return True
+                                        else: return False
                                 else:
-                                    Fail(word[1],word[2])
-                                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                                    Fail("end",num_linea)
+                                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                         NextToken()
+                                        num_linea = word[2]
                                         word = CurrentToken()
-                                        return True
+                                    if word: return True
+                                    else: return False
                             return False
                         else:
-                            Fail(word[1],word[2])
-                            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                            Fail("begin",num_linea)
+                            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                                 NextToken()
+                                num_linea = word[2]
                                 word = CurrentToken()
-                                return True
+                            if word: return True
+                            else: return False
                     else:
-                        Fail(word[1],word[2])
-                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        Fail("then",num_linea)
+                        while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                             NextToken()
+                            num_linea = word[2]
                             word = CurrentToken()
-                            return True
+                        if word: return True
+                        else: return False
                 else:
-                    Fail(word[1],word[2])
-                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    Fail(")",num_linea)
+                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                        return True
+                    if word: return True
+                    else: return False
             return False
         else:
-            Fail(word[1],word[2])
-            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+            Fail("(",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-                return True
+            if word: return True
+            else: return False
     else:
-        Fail(word[1],word[2])
+        Fail("if",num_linea)
 
     return False
 
 
 def IfStatementPrime(parent_=None):
+    global num_linea
     rIfStatementPrime = Node(str(uuid4()),parent=parent_,display_name="IfStatement'")
     word = CurrentToken()
     
-    #IfStatement' -> e
-    if word[1] in ["for","if","write","writeln","break","continue","end"] or (word[0] == "ID" and word[1] != "else"):
-        rIfStatementPrime.parent = None
-        return True
-
     #IfStatement' -> else begin StatementList end;
-    elif word[1] == "else":
+    if word and word[1] == "else":
         Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == "begin":
+        if word and word[1] == "begin":
             Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
             NextToken()
+            num_linea = word[2]
 
             if StatementList(rIfStatementPrime):
                 word = CurrentToken()
 
-                if word[1] == "end":
+                if word and word[1] == "end":
                     Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
 
-                    if word[1] == ";":
+                    if word and word[1] == ";":
                         Node(str(uuid4()),parent=rIfStatementPrime,display_name=word[1])
                         NextToken()
+                        num_linea = word[2]
                         return True
                     else:
-                        Fail(word[1],word[2])
-                        while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                        Fail(";",num_linea)
+                        while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                             NextToken()
+                            num_linea = word[2]
                             word = CurrentToken()
-                            return True
+                        if word: return True
+                        else: return False
                 else:
-                    Fail(word[1],word[2])
-                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    Fail("end",num_linea)
+                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                        return True
+                    if word: return True
+                    else: return False
             
             return False
         else:
-            Fail(word[1],word[2])
-            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+            Fail("begin",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-                return True
+            if word: return True
+            else: return False
  
-    Fail(word[1],word[2])
+
+    #IfStatement' -> e
+    elif word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+        rIfStatementPrime.parent = None
+        return True
+
+    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+        NextToken()
+        num_linea = word[2]
+        word = CurrentToken()
+    
+    if word: return True
+    else: Fail("ELSE|END|FOR|IF|WRITELN|WRITE|BREAK|CONTINUE|ID",num_linea)
+
     return False 
 
 
 def Assign(parent_=None):
     #Assign -> id := Expr;
-
+    global num_linea
     rAssign = Node(str(uuid4()),parent=parent_,display_name="Assign")
     word = CurrentToken()
 
-    if word[0] == "ID":
+    if word and word[0] == "ID":
         Node(str(uuid4()),parent=rAssign,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == ":=":
+        if word and word[1] == ":=":
             Node(str(uuid4()),parent=rAssign,display_name=word[1])
             NextToken()
+            num_linea = word[2]
 
             if Expr(rAssign):
                 word = CurrentToken()
 
-                if word[1] == ";":
+                if word and word[1] == ";":
                     Node(str(uuid4()),parent=rAssign,display_name=word[1])
                     NextToken()
+                    num_linea = word[2]
                     return True
                 else:
-                    Fail(word[1],word[2])
-                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    Fail(";",num_linea)
+                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                         NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                    return True
+                    if word: return True
+                    else: return False
 
             return False
         else:
-            Fail(word[1],word[2])
-            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+            Fail(":=",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-            return True
+            if word: return True
+            else: return False
 
     else:
-        Fail(word[0],word[2])
+        Fail("ID",num_linea)
 
     return False
 
 
 def Expr(parent_= None):
     #Expr -> not Expr Expr'
-
+    global num_linea
     rExpr = Node(str(uuid4()),parent = parent_,display_name="Expr")
     word = CurrentToken()
 
-    if word[1] == "not":
+    if word and word[1] == "not":
         Node(str(uuid4()),parent=rExpr,display_name=word[1])
         NextToken()
-
+        num_linea = word[2]
         if Expr(rExpr):
             return ExprPrime(rExpr)
         return False
@@ -744,23 +905,26 @@ def Expr(parent_= None):
     elif Expr2(rExpr):
         return ExprPrime(rExpr) 
 
-    Fail(word[1],word[2])
-    while word[1] not in [";","do",")"]:
+    
+    while word and word[1] not in [";","do",")"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
+    if word: return True
+    else: Fail("NOT|;|DO|)",num_linea)
     return False 
 
 
 def ExprPrime(parent_=None):
     #Expr' -> BooleanOp Expr2 Expr'
-
+    global num_linea
     word = CurrentToken()
     rExprPrime = Node(str(uuid4()),parent=parent_,display_name="Expr'")
 
-    if word[1] in ["and","or"]:
+    if word and word[1] in ["and","or"]:
         Node(str(uuid4()),parent=rExprPrime,display_name=word[1])
         NextToken()
+        num_linea = word[2]
 
         if Expr2(rExprPrime):
             return ExprPrime(rExprPrime)
@@ -768,15 +932,16 @@ def ExprPrime(parent_=None):
 
     #Expr' -> e
 
-    elif word[1] in [")","do",";"]:
+    elif word and word[1] in [")","do",";"]:
         rExprPrime.parent = None
         return True
 
-    Fail(word[1],word[2])
-    while word[1] not in [";","do",")"]:
+    while word and word[1] not in [";","do",")"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
+    if word: return True
+    else: Fail("AND|OR|;|DO|)",num_linea)
     return False 
 
 
@@ -792,29 +957,31 @@ def Expr2(parent_=None):
 
 def Expr2Prime(parent_=None):
     #Expr2' -> RelOp Expr3 Expr2'
-
+    global num_linea
     rExpr2Prime = Node(str(uuid4()),parent=parent_,display_name="Expr2'")
     word = CurrentToken()
 
-    if word[1] in ["=","<>","<","<=",">=",">"]:
+    if word and word[1] in ["=","<>","<","<=",">=",">"]:
         Node(str(uuid4()),parent=rExpr2Prime,display_name=word[1])
         NextToken()
+        num_linea = word[2]
 
         if Expr3(rExpr2Prime):
             return Expr2Prime(rExpr2Prime)
         return False
 
     #Expr2' -> e
-    elif word[1] in [")","do","and","or",";"]:
+    elif word and word[1] in [")","do","and","or",";"]:
         rExpr2Prime.parent = None
         return True
     
-    Fail(word[1],word[2])
-    while word[1] not in ["and","or",";","do",")"]:
+    while word and word[1] not in ["and","or",";","do",")"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
-    return False
+    if word: return True
+    else: Fail("=|<>|<|<=|>=|>|AND|OR|;|DO|)",num_linea)
+    return False 
 
 
 def Expr3(parent_=None):
@@ -830,13 +997,14 @@ def Expr3(parent_=None):
 def Expr3Prime(parent_=None):
     #Expr3' -> + Term Expr3'
     #Expr3' -> - Term Expr3'
-
+    global num_linea
     rExpr3Prime = Node(str(uuid4()),parent=parent_,display_name="Expr3'")
     word = CurrentToken()
 
-    if word[1] in ["+","-"]:
+    if word and word[1] in ["+","-"]:
         Node(str(uuid4()),parent=rExpr3Prime,display_name=word[1])
         NextToken()
+        num_linea = word[2]
 
         if Term(rExpr3Prime):
             return Expr3Prime(rExpr3Prime)
@@ -847,12 +1015,13 @@ def Expr3Prime(parent_=None):
         rExpr3Prime.parent = None
         return True
 
-    Fail(word[1],word[2])
-    while word[1] not in ["=","<>","<","<=",">=",">","and","or",";","do",")"]:
+    while word and word[1] not in ["=","<>","<","<=",">=",">","and","or",";","do",")"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
-    return False
+    if word: return True
+    else: Fail("+|-|=|<>|<|<=|>=|>|AND|OR|;|DO|)",num_linea)
+    return False 
 
 
 def Term(parent_=None):
@@ -869,40 +1038,43 @@ def TermPrime(parent_=None):
     #Term' -> / Factor Term'
     #Term' -> div Factor Term'
     #Term' -> mod Factor Term'
-
+    global num_linea
     rTermPrime = Node(str(uuid4()),parent=parent_,display_name="Term'")
     word = CurrentToken()
 
-    if word[1] in ["*","/","div","mod"]:
+    if word and word[1] in ["*","/","div","mod"]:
         Node(str(uuid4()),parent=parent_,display_name=word[1])
         NextToken()
+        num_linea = word[2]
 
         if Factor(rTermPrime):
             return TermPrime(rTermPrime)
         return False
 
     #Term' -> e
-    elif word[1] in ["=","<>","<","<=",">=",">",")","do","and","or",";","+","-"]:
+    elif word and word[1] in ["=","<>","<","<=",">=",">",")","do","and","or",";","+","-"]:
         rTermPrime.parent = None
         return True
 
-    Fail(word[1],word[2])
-    while word[1] not in ["+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
+    while word and word[1] not in ["+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
-    return False
+    if word: return True
+    else: Fail("*|/|DIV|MOD|+|-|=|<>|<|<=|>=|>|AND|OR|;|DO|)",num_linea)
+    return False 
 
 
 def Factor(parent_=None):
     #Factor -> id
-
+    global num_linea
     rFactor = Node(str(uuid4()),parent=parent_,display_name="Factor")
     word = CurrentToken()
 
-    if word[0] == "ID":
+    if word and word[0] == "ID":
         Node(str(uuid4()),parent=rFactor,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         return True
     
     #Factor -> Value
@@ -910,131 +1082,186 @@ def Factor(parent_=None):
     elif word[0] in ["NUM","STRING"]:
         Node(str(uuid4()),parent=rFactor,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         return True
     
     #Factor -> (Expr)
 
-    elif word[1] == "(":
+    elif word and word[1] == "(":
         Node(str(uuid4()),parent=rFactor,display_name=word[1])
         NextToken()
+        num_linea = word[2]
 
         if Expr(rFactor):
             word = CurrentToken()
 
-            if word[1] == ")":
+            if word and word[1] == ")":
                 Node(str(uuid4()),parent=rFactor,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
                 return True
 
             else:
-                Fail(word[1],word[2])
-                while word[1] not in ["mod","div","/","*","+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
+                Fail(")",num_linea)
+                while word and word[1] not in ["mod","div","/","*","+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
-                    return True
+                if word: return True
+                else: return False
         
         return False
     
-    Fail(word[0],word[2])
-    while word[1] not in ["mod","div","/","*","+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
+
+    while word and word[1] not in ["mod","div","/","*","+","-","=","<>","<","<=",">=",">","and","or",";","do",")"]:
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
-        return True
-    return False
+    if word: return True
+    else: Fail("ID|STRING|NUM|(|*|/|DIV|MOD|+|-|=|<>|<|<=|>=|>|AND|OR|;|DO|)",num_linea)
+    return False 
 
 
 def WriteLn(parent_=None):
-    #WriteLn -> writeln (v_string)
-
+    #WriteLn -> writeln (v_string);
+    global num_linea
     rWriteLn = Node(str(uuid4()),parent=parent_,display_name="WriteLn")
     word = CurrentToken()
     
 
-    if word[1] == "writeln":
+    if word and word[1] == "writeln":
         Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == "(":
+        if word and word[1] == "(":
             Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
             NextToken()
+            num_linea = word[2]
             word = CurrentToken()
             
-            if word[0] == "STRING":
+            if word and word[0] == "STRING":
                 Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
                 
-                if word[1] == ")":
+                if word and word[1] == ")":
                     Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
                     NextToken()
-                    return True
-                else:
-                    Fail(word[1],word[2])
-                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    num_linea = word[2]
+                    word = CurrentToken()
+
+                    if word and word[1] == ";":
+                        Node(str(uuid4()),parent=rWriteLn,display_name=word[1])
                         NextToken()
+                        num_linea = word[2]
+                        return True
+
+                    else:
+                        Fail(";",num_linea)
+                        while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+                            NextToken()
+                            num_linea = word[2]
+                            word = CurrentToken()
+                        if word: return True
+                        else: return False
+
+                else:
+                    Fail(")",num_linea)
+                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+                        NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                    return True
+                    if word: return True
+                    else: return False
 
             else:
-                Fail(word[0],word[2])
-                while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                Fail("STRING",num_linea)
+                while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                     NextToken()
+                    num_linea = word[2]
                     word = CurrentToken()
                 return True
 
         else:
-            Fail(word[1],word[2])
-            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+            Fail("(",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-            return True
+            if word: return True
+            else: return False
     else:
-        Fail(word[1],word[2])
+        Fail("writeln",num_linea)
 
     return False 
 
 
 def Write(parent_=None):
-    #Write -> write (Expr)
-
+    #Write -> write (Expr);
+    global num_linea
     rWrite = Node(str(uuid4()),parent=parent_,display_name="Write")
     word = CurrentToken()
 
-    if word[1] == "write":
+    if word and word[1] == "write":
         Node(str(uuid4()),parent=rWrite,display_name=word[1])
         NextToken()
+        num_linea = word[2]
         word = CurrentToken()
 
-        if word[1] == "(":
+        if word and word[1] == "(":
             Node(str(uuid4()),parent=rWrite,display_name=word[1])
             NextToken()
+            num_linea = word[2]
             
             if Expr(rWrite):
                 
                 word = CurrentToken()
                 
-                if word[1] == ")":
+                if word and word[1] == ")":
                     Node(str(uuid4()),parent=rWrite,display_name=word[1])
                     NextToken()
-                    return True 
-                else:
-                    Fail(word[1],word[2])
-                    while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+                    num_linea = word[2]
+                    word = CurrentToken()
+
+                    if word and word[1] == ";":
+                        Node(str(uuid4()),parent=rWrite,display_name=word[1])
                         NextToken()
+                        num_linea = word[2]
+                        return True
+                    
+                    else:
+                        Fail(";",num_linea)
+                        while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+                            NextToken()
+                            num_linea = word[2]
+                            word = CurrentToken()
+                        if word: return True
+                        else: return False  
+
+                else:
+                    Fail(")",num_linea)
+                    while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
+                        NextToken()
+                        num_linea = word[2]
                         word = CurrentToken()
-                    return True
+                    if word: return True
+                    else: return False
 
             return False 
         else:
-            Fail(word[1],word[2])
-            while word[1] not in ["end","for","if","writeln","write","break","continue"]:
+            Fail("(",num_linea)
+            while word and word[0] not in ["END","FOR","IF","WRITELN","WRITE","BREAK","CONTINUE","ID"]:
                 NextToken()
+                num_linea = word[2]
                 word = CurrentToken()
-            return True
+            if word: return True
+            else: return False
 
     else:
-        Fail(word[1],word[2])
+        Fail("write",num_linea)
     
     return False
 

@@ -1,0 +1,21 @@
+program Test4;
+var
+   age : integer;
+
+begin
+	age := 0;
+	if (age < 1) then
+		begin
+			writeln('Age cannot be less than 1...');
+			age := 100;
+		end;
+	else
+		begin 
+			if (age >= 100) then
+			begin
+				writeln('Age cannot be equal or greater than 100...');
+			age := age - 20 - 30; 
+			end;
+		end;
+	write(age);
+end.

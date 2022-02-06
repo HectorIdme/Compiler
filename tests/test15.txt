@@ -1,0 +1,9 @@
+program Test2;
+const num1 = 11;
+      num2 = 27; 
+var  sum : integer;
+
+begin 
+	sum := num1 + num2; 
+	writeln(sum);
+end.

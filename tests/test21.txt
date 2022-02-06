@@ -1,0 +1,15 @@
+program nestedPrime;
+var
+    i,j:integer;
+
+begin
+    if ( j = i) then
+        begin
+            writeln(' is prime' );
+        end;
+    else 
+        begin
+            writeln('oh no');
+        end;
+end.
+
