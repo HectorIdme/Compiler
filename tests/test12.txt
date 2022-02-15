@@ -9,12 +9,12 @@ begin
             begin 
             if ((i mod j)=0) then
                 begin
-                 break {* if factor found, not prime *}
+                 break; {* if factor found, not prime *}
                 end;
             end;
         if ( j = i) then
             begin
-                writeln(' is prime' )
+                writeln(' is prime' );
             end;
     end;
 end.

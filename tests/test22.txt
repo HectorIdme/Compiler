@@ -1,0 +1,26 @@
+program Test2;
+const
+    PI = 3.1416;
+    EULER = 2.1614;
+var  sum,res,age : integer;
+
+begin
+    age := -2;
+    sum := 1;
+	if (age < 1) then
+		begin
+            writeln('Entre al if condicional');
+            if (sum = 0) then 
+                begin
+                    writeln('sum es igual a 0');
+                end;
+            else
+                begin
+                    write(1+1);
+                end;
+        end;
+    else
+        begin
+            writeln('Entre al else');
+        end;
+end.
